@@ -1,0 +1,201 @@
+{{template "base" .}}
+{{define "title"}} All User {{end}}
+{{define "content"}}
+<h2 class="mt-5">Add user</h2>
+<hr>
+
+<div class="alert alert-danger text-center d-none" id="card-messages"></div>
+<!-- form buy -->
+<form method="post" name="user_form" id="user_form" class="d-block needs-validation" autocomplete="off" novalidate="">
+    <div class="mb-3">
+        <label for="first-name" class="form-label">First Name</label>
+        <input type="text" id="first-name" name="-" class="form-control" required  autocomplete="first-name-new">
+    </div>
+    <div class="mb-3">
+        <label for="last-name" class="form-label">Last Name</label>
+        <input type="text" id="last-name" name="last_name" class="form-control" required autocomplete="last-name-new">
+    </div>
+    <div class="mb-3">
+        <label for="email" class="form-label">Email</label>
+        <input type="email" id="email" name="email" class="form-control" required  autocomplete="email-new">
+    </div>
+    <div class="mb-3">
+        <label for="password" class="form-label">Password</label>
+        <input type="password" id="password" name="password" class="form-control"  autocomplete="password-new">
+    </div>
+    <div class="mb-3">
+        <label for="verivy-password" class="form-label">verify Password</label>
+        <input type="password" id="verify-password" name="verify-password" class="form-control"  autocomplete="verivy-password-new">
+    </div>
+
+    <hr>
+
+    <dic class="float-start">
+        <a href="javascript:void(0)" class="btn btn-primary" onclick="val()" id="add-btn" >Save Change</a>
+        <a href="/admin/all-users" class="btn btn-warning">Cancle</a>
+        <div id="proccessing-add-user" class="text-center d-none">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading....</span>
+            </div>
+        </div>
+    </dic>
+    <div class="float-end">
+        <a href="javascript:void(0)" class="btn btn-danger d-none"  id="delete-btn" >Delete User</a>
+    </div>
+
+</form>
+
+{{end}}
+
+{{define "javascript"}}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    const token = localStorage.getItem("token")
+    let id = window.location.pathname.split("/").pop();
+    const cardMessages = document.getElementById("card-messages")
+    const addBtn = document.getElementById("add-btn")
+    const proccessing = document.getElementById("proccessing-add-user")
+    const deleteBtn = document.getElementById("delete-btn")
+
+    function hideaddBtn(){
+        addBtn.classList.add("d-none")
+        proccessing.classList.remove("d-none")
+    }
+    function showaddBtns(){
+        addBtn.classList.remove("d-none")
+        proccessing.classList.add("d-none")
+    }
+    function showCardError(msg){
+       cardMessages.classList.add("alert-danger")
+       cardMessages.classList.remove("alert-success")
+       cardMessages.classList.remove("d-none")
+       cardMessages.innerText = msg
+    }
+    function showCardSuccess(msg){
+        cardMessages.classList.remove("alert-danger")
+       cardMessages.classList.add("alert-success")
+       cardMessages.classList.remove("d-none")
+       cardMessages.innerText = msg
+    }
+
+    function val(){
+        let form = document.getElementById("user_form");
+        if (form.checkVisibility() === false) {
+            this.event.preventDefault()
+            this.event.stopPropagation();
+            form.classList.add("was-validated")
+            return
+        }
+
+        form.classList.add("was-validated")
+
+
+        if (document.getElementById("password").value !== document.getElementById("verify-password").value) {
+            Swal.fire("Password do not match")
+            return
+        }
+
+        let payload = {
+            id: parseInt(id, 10),
+            first_name : document.getElementById("first-name").value,
+            last_name : document.getElementById("last-name").value,
+            email: document.getElementById("email").value,
+            password: document.getElementById("password").value
+        }
+
+        const requestOptions = {
+            method: "POST",
+            headers: {
+                "Accept":"application/json",
+                "Content-Type": "application/json",
+                "Authorization": "Bearer "+ token,
+            },
+            body: JSON.stringify(payload)
+        }
+        fetch('{{.API}}/api/admin/all-users/edit/'+id, requestOptions)
+        .then(res => res.json() )
+        .then(res => {
+            if(res.error) {
+                showCardError(res.error.message)
+                // console.log(res.error.message);
+            }else{
+              showCardSuccess("Successfully")
+                setTimeout(()=>{
+                    location.href = "/admin/all-users"
+                },1000)
+            }
+        })
+    }
+
+    document.addEventListener("DOMContentLoaded", function(){
+
+        if(id != "0") {
+            if (id != "{{.UserID}}") {
+                deleteBtn.classList.remove("d-none")
+            } 
+          
+            const requestOptions = {
+            method: "POST",
+            headers: {
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "Authorization": "Bearer "+ token
+            }
+        }
+
+        fetch('{{.API}}/api/admin/all-users/'+ id, requestOptions)
+        .then(res=>res.json())
+        .then(function(data){
+            console.log(data);
+            if(data) {
+                document.getElementById("first-name").value = data.first_name;
+                document.getElementById("last-name").value = data.last_name;
+                document.getElementById("email").value = data.email;
+            }
+        })
+        }
+
+    })
+
+    deleteBtn.addEventListener("click", function(){
+        Swal.fire({
+            title: "Are you sure?",
+            text: "You won't be able to revert this!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#3085d6",
+            cancelButtonColor: "#d33",
+            confirmButtonText: 'delete user?'
+            }).then((result) => {
+            if (result.isConfirmed) {
+
+                const requestOptions = {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json",
+                        "Authorization": "Bearer "+ token
+                    },
+                }
+                fetch('{{.API}}/api/admin/all-users/delete/'+id, requestOptions)
+                .then(response => response.json())
+                .then(function (data) {
+                    console.log(data);
+                    if (data.error) {
+                        showErrorMessage(data.message)
+                    }else{
+                        let jsonData = {
+                                action: "deleteUser",
+                                user_id: parseInt(id, 10)
+                            }
+                        
+                        socket.send(JSON.stringify(jsonData))
+                        location.href = "/admin/all-users"
+                    }
+                })
+            }
+            });
+    })
+
+</script>
+{{end}}

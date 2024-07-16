@@ -1,0 +1,72 @@
+{{template "base" .}}
+{{define "title"}} All Users {{end}}
+{{define "content"}}
+<h2 class="mt-5">All Admin users</h2>
+<hr>
+<div class="float-end">
+    <a href="/admin/all-users/0" class="btn btn-outline-secondary">Add User</a>
+</div>
+<div class="clearfix"></div>
+<table class="table table-striped" id="user-table">
+    <thead>
+        <tr>
+                <li><hr class="dropdown-divider"></li>
+                <td>User</td>
+                <td>email</td>
+        </tr>
+    </thead>
+    <tbody>
+
+    </tbody>
+</table>
+
+{{end}}
+
+{{define "javascript"}}
+<script>
+    document.addEventListener("DOMContentLoaded", function(){
+        let tbody = document.getElementById("user-table").getElementsByTagName("tbody")[0]
+        let token = localStorage.getItem("token")
+
+        let requestOptions = {
+        method:"POST",
+        headers: {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": "Bearer "+ token
+        },
+    }
+
+    fetch("{{.API}}/api/admin/all-users", requestOptions)
+    .then(res => res.json())
+    .then(data => {
+        tbody.innerHTML = ""
+        if(data){
+            data.forEach(i => {
+                let newRow = tbody.insertRow();
+                let newCell = newRow.insertCell()
+                newCell.innerHTML = `<a href="/admin/all-users/${i.id}">${i.last_name}, ${i.first_name}</a>`
+
+                newCell = newRow.insertCell()
+                let item = document.createTextNode(i.email)
+                newCell.appendChild(item)
+
+
+                // newCell = newRow.insertCell()
+                // if(i.status_id != 1) {
+                //     newCell.innerHTML = `<span class="badge bg-danger">Refund</span>`;
+                // }else{
+                //     newCell.innerHTML = `<span class="badge bg-success">Charge</span>`;
+                // }
+            });
+            // paginator(data.last_page, data.current_page)
+        }else{
+            let newRow = tbody.insertRow();
+            let newCell = newRow.insertCell()
+            newCell.setAttribute("colspan", 3)
+            newCell.innerHTML = "<p class='text-center'><b>No Data Available</b></p>"
+        }
+    })
+    })
+</script>
+{{end}}
